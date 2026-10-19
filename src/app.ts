@@ -7,6 +7,8 @@ import { apiRateLimiter } from './middleware/rate-limit.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { requestId } from './middleware/request-id.js';
+import path from 'node:path';
+import { authRouter } from './routes/v1/auth.routes.js';
 import { v1Router } from './routes/v1/index.js';
 import { logger } from './utils/logger.js';
 
@@ -32,12 +34,18 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(apiRateLimiter);
 
+  // Serve generated media assets
+  app.use('/media', express.static(path.resolve(process.cwd(), 'public', 'media')));
+
   app.get('/health', (_req, res) => {
     res.json({
       success: true,
       data: { status: 'ok', service: 'cineai-backend', env: env.NODE_ENV },
     });
   });
+
+  // Top-level auth mount for compatibility
+  app.use('/auth', authRouter);
 
   app.use('/api/v1', v1Router);
   app.use(notFoundHandler);
