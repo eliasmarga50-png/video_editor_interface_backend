@@ -11,7 +11,7 @@ export interface SceneConcept {
 export interface BrollExtractionResult {
   summary: string;
   scenes: SceneConcept[];
-  provider: 'anthropic' | 'openai';
+  provider: string;
 }
 
 export interface BrollExtractOptions {
