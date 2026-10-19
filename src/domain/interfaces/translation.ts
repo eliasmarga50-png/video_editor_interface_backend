@@ -8,7 +8,7 @@ export interface TranslationResult {
   originalText: string;
   cleanedText: string;
   translatedText: string;
-  provider: 'anthropic' | 'openai';
+  provider: string;
 }
 
 export interface TranslateOptions {
