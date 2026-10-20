@@ -1,62 +1,49 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { env } from '../config/env.js';
-import { AppError } from '../domain/errors/app-error.js';
-import { logger } from '../utils/logger.js';
+import { LlmService } from './llm/llm.service.js';
 
-export type LlmProvider = 'anthropic' | 'openai';
+export type LlmProvider = string;
 
 export class LlmClient {
-  private readonly anthropic: Anthropic;
-  private readonly openai: OpenAI;
+  private _anthropic: Anthropic | null = null;
+  private _openai: OpenAI | null = null;
+  private readonly service: LlmService;
 
-  constructor() {
-    this.anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-    this.openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+  constructor(service?: LlmService) {
+    this.service = service ?? new LlmService();
   }
 
   get openaiClient(): OpenAI {
-    return this.openai;
+    if (!this._openai) {
+      this._openai = new OpenAI({ apiKey: env.OPENAI_API_KEY || 'dummy-key' });
+    }
+    return this._openai;
   }
 
-  async completeJson(system: string, user: string, provider: LlmProvider = env.LLM_PROVIDER): Promise<{
-    text: string;
-    provider: LlmProvider;
-  }> {
-    try {
-      if (provider === 'anthropic') {
-        const response = await this.anthropic.messages.create({
-          model: env.ANTHROPIC_MODEL,
-          max_tokens: 4096,
-          temperature: 0.2,
-          system,
-          messages: [{ role: 'user', content: user }],
-        });
-        const text = response.content
-          .filter((block) => block.type === 'text')
-          .map((block) => (block.type === 'text' ? block.text : ''))
-          .join('\n')
-          .trim();
-        if (!text) throw AppError.upstream('Empty response from Anthropic');
-        return { text, provider };
-      }
-
-      const response = await this.openai.chat.completions.create({
-        model: env.OPENAI_CHAT_MODEL,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      });
-      const text = response.choices[0]?.message?.content?.trim();
-      if (!text) throw AppError.upstream('Empty response from OpenAI');
-      return { text, provider };
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      logger.error({ err: error, provider }, 'LLM completion failed');
-      throw AppError.upstream('Language model request failed', error);
+  get anthropicClient(): Anthropic {
+    if (!this._anthropic) {
+      this._anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY || 'dummy-key' });
     }
+    return this._anthropic;
+  }
+
+  get llmService(): LlmService {
+    return this.service;
+  }
+
+  async completeJson(
+    system: string,
+    user: string,
+    provider?: string,
+  ): Promise<{
+    text: string;
+    provider: string;
+  }> {
+    const result = await this.service.completeJson(system, user, { provider });
+    return {
+      text: result.text,
+      provider: result.provider,
+    };
   }
 }
