@@ -1,15 +1,27 @@
-export type VideoProvider = 'runway' | 'luma';
+export type VideoProvider = 'pollinations' | 'pexels' | 'local' | 'runway' | 'luma';
 
-export type VideoTaskStatus = 'queued' | 'processing' | 'succeeded' | 'failed';
+export type VideoTaskStatus = 'queued' | 'planning' | 'processing' | 'succeeded' | 'failed';
 
 export interface GenerateVideoInput {
   prompt: string;
-  provider: VideoProvider;
+  provider?: VideoProvider;
+  style?: string;
+  vibe?: string;
+  platform?: string;
   durationSeconds?: number;
-  aspectRatio?: string;
+  aspectRatio?: '9:16' | '16:9' | '1:1' | '4:3' | '3:4' | string;
   imageUrl?: string;
   model?: string;
   webhookUrl?: string;
+}
+
+export interface VideoClipInfo {
+  id: string;
+  url: string;
+  thumbnailUrl?: string;
+  title: string;
+  durationMs: number;
+  aspectRatio: string;
 }
 
 export interface VideoGenerationTask {
@@ -17,10 +29,16 @@ export interface VideoGenerationTask {
   provider: VideoProvider;
   providerTaskId: string;
   status: VideoTaskStatus;
+  statusMessage?: string;
   progress: number;
   prompt: string;
   model: string;
   outputUrl: string | null;
+  thumbnailUrl?: string | null;
+  plan?: Record<string, unknown>;
+  clips?: VideoClipInfo[];
+  aiTrace?: Record<string, unknown>;
+  limitationsNotice?: string;
   error: string | null;
   createdAt: string;
   updatedAt: string;
